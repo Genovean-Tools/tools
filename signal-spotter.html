@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal Spotter — Genovean</title>
+<style>
+/* ── Genovean brand tokens ── */
+:root {
+  --g-dark:    #1A3A2A;
+  --g-mid:     #1D9E75;
+  --g-light:   #E1F5EE;
+  --g-sand:    #F5F0E8;
+  --g-warm:    #C8B89A;
+  --g-text:    #1C1C1A;
+  --g-muted:   #5A5A56;
+  --g-subtle:  #8A8A84;
+  --g-border:  #D8D4C8;
+  --g-white:   #FFFFFF;
+  --g-amber:   #FAEEDA;
+  --g-amber-t: #633806;
+  --g-amber-b: #BA7517;
+  --g-red-bg:  #FCEBEB;
+  --g-red-t:   #791F1F;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  background: var(--g-sand);
+  color: var(--g-text);
+  line-height: 1.65;
+  font-size: 15px;
+}
+
+/* ── Print styles ── */
+@media print {
+  body { background: #fff; font-size: 12pt; }
+  .no-print { display: none !important; }
+  .signal-card { break-inside: avoid; page-break-inside: avoid; }
+  .header-bar { background: #1A3A2A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .section-band { background: #E1F5EE !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .detail-body { display: block !important; }
+  .freq-row { display: flex !important; }
+  .notes-field { min-height: 60px !important; border: 1px solid #ccc !important; }
+  .summary-panel { background: #f5f5f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #ccc !important; }
+  a { color: inherit; text-decoration: none; }
+  .page-wrap { max-width: 100%; padding: 0; }
+}
+
+/* ── Layout ── */
+.page-wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 0 60px;
+}
+
+/* ── Header ── */
+.header-bar {
+  background: var(--g-dark);
+  color: #fff;
+  padding: 28px 36px 24px;
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.brand-name {
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: normal;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--g-warm);
+}
+.phase-tag {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,.12);
+  color: var(--g-warm);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.tool-title {
+  font-family: Georgia, serif;
+  font-size: 32px;
+  font-weight: normal;
+  color: #fff;
+  letter-spacing: -.02em;
+  margin-bottom: 8px;
+  line-height: 1.15;
+}
+.tool-subtitle {
+  font-size: 14px;
+  color: rgba(255,255,255,.65);
+  max-width: 520px;
+  line-height: 1.55;
+}
+.how-to-banner {
+  background: rgba(255,255,255,.08);
+  border-left: 3px solid var(--g-mid);
+  padding: 12px 16px;
+  margin-top: 18px;
+  font-size: 13px;
+  color: rgba(255,255,255,.75);
+  line-height: 1.55;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.how-to-banner strong { color: #fff; }
+
+/* ── Progress bar ── */
+.progress-wrap {
+  background: var(--g-white);
+  border-bottom: 1px solid var(--g-border);
+  padding: 12px 36px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--g-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.progress-track {
+  flex: 1;
+  height: 5px;
+  background: var(--g-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--g-mid);
+  border-radius: 3px;
+  width: 0%;
+  transition: width .3s ease;
+}
+.progress-label { white-space: nowrap; font-size: 12px; color: var(--g-subtle); min-width: 80px; text-align: right; }
+
+/* ── Body content ── */
+.content-area { padding: 0 36px; }
+
+/* ── Section bands ── */
+.section-band {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--g-light);
+  padding: 9px 36px;
+  margin: 24px -36px 12px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #085041;
+}
+.section-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--g-mid);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.section-icon svg { width: 10px; height: 10px; fill: #fff; }
+
+/* ── Signal cards ── */
+.signal-card {
+  background: var(--g-white);
+  border: 1px solid var(--g-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.signal-card.is-marked { border-color: var(--g-mid); }
+
+.signal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--g-white);
+  transition: background .12s;
+}
+.signal-header:hover { background: #fafaf7; }
+
+.signal-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--g-sand);
+  border: 1px solid var(--g-border);
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--g-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s, color .15s;
+  font-family: Georgia, serif;
+}
+.signal-card.is-yes .signal-num  { background: var(--g-mid); border-color: var(--g-mid); color: #fff; }
+.signal-card.is-sometimes .signal-num { background: var(--g-amber-b); border-color: var(--g-amber-b); color: #fff; }
+.signal-card.is-no .signal-num   { background: var(--g-border); border-color: var(--g-border); color: var(--g-subtle); }
+
+.signal-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: normal;
+  font-family: Georgia, serif;
+  color: var(--g-text);
+  line-height: 1.4;
+}
+.signal-status {
+  font-size: 11px;
+  color: var(--g-subtle);
+  white-space: nowrap;
+  font-family: Georgia, serif;
+}
+.signal-card.is-yes .signal-status    { color: #0F6E56; font-weight: bold; }
+.signal-card.is-sometimes .signal-status { color: var(--g-amber-b); font-weight: bold; }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--g-border);
+  flex-shrink: 0;
+  transition: transform .2s;
+}
+.signal-card.is-open .chevron { transform: rotate(180deg); }
+
+/* ── Detail body ── */
+.detail-body {
+  display: none;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--g-border);
+}
+.signal-card.is-open .detail-body { display: block; }
+
+.signal-desc {
+  font-size: 13.5px;
+  color: var(--g-muted);
+  line-height: 1.65;
+  padding: 14px 0 12px;
+  font-family: Georgia, serif;
+}
+
+.guidance-box {
+  background: var(--g-sand);
+  border-left: 3px solid var(--g-warm);
+  padding: 11px 14px;
+  margin-bottom: 14px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.guidance-label {
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--g-subtle);
+  margin-bottom: 5px;
+  font-family: Georgia, serif;
+}
+.guidance-text {
+  font-size: 13px;
+  color: var(--g-muted);
+  line-height: 1.55;
+  font-family: Georgia, serif;
+}
+
+.freq-label {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--g-subtle);
+  margin-bottom: 8px;
+  font-family: Georgia, serif;
+}
+.freq-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.freq-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 8px 10px;
+  font-size: 12px;
+  border: 1px solid var(--g-border);
+  border-radius: var(--radius-sm);
+  background: var(--g-white);
+  color: var(--g-muted);
+  cursor: pointer;
+  text-align: center;
+  font-family: Georgia, serif;
+  transition: background .12s, border-color .12s, color .12s;
+  line-height: 1.3;
+}
+.freq-btn:hover { background: var(--g-sand); }
+.freq-btn.sel-yes       { background: var(--g-light); border-color: var(--g-mid); color: #085041; font-weight: bold; }
+.freq-btn.sel-sometimes { background: var(--g-amber); border-color: var(--g-amber-b); color: var(--g-amber-t); font-weight: bold; }
+.freq-btn.sel-no        { background: var(--g-sand); border-color: var(--g-border); color: var(--g-subtle); font-style: italic; }
+
+.notes-label {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--g-subtle);
+  margin-bottom: 6px;
+  font-family: Georgia, serif;
+}
+.notes-field {
+  width: 100%;
+  min-height: 70px;
+  border: 1px solid var(--g-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: Georgia, serif;
+  color: var(--g-text);
+  background: var(--g-white);
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color .15s;
+}
+.notes-field:focus { outline: none; border-color: var(--g-mid); }
+.notes-field::placeholder { color: var(--g-subtle); font-style: italic; }
+
+/* ── Summary panel ── */
+.summary-panel {
+  background: var(--g-dark);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  margin-top: 28px;
+  color: #fff;
+}
+.summary-title {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: normal;
+  color: #fff;
+  margin-bottom: 18px;
+  letter-spacing: -.01em;
+}
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-box {
+  background: rgba(255,255,255,.08);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  text-align: center;
+}
+.stat-num {
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: normal;
+  display: block;
+  margin-bottom: 4px;
+  color: #fff;
+}
+.stat-box.yes-box .stat-num  { color: #5DCAA5; }
+.stat-box.some-box .stat-num { color: #FAC775; }
+.stat-lbl { font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: .06em; text-transform: uppercase; }
+
+.interpretation {
+  background: rgba(255,255,255,.07);
+  border-left: 3px solid var(--g-mid);
+  padding: 13px 16px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13.5px;
+  color: rgba(255,255,255,.82);
+  line-height: 1.6;
+  font-family: Georgia, serif;
+  margin-bottom: 20px;
+}
+.interpretation strong { color: #fff; }
+
+.next-label {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  margin-bottom: 10px;
+}
+.next-steps { display: flex; gap: 10px; flex-wrap: wrap; }
+.next-btn {
+  padding: 9px 16px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: Georgia, serif;
+  border: none;
+  transition: opacity .15s;
+}
+.next-btn:hover { opacity: .88; }
+.next-btn.primary { background: var(--g-mid); color: #fff; }
+.next-btn.secondary { background: rgba(255,255,255,.12); color: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.2); }
+
+/* ── Action bar ── */
+.action-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--g-border);
+}
+.action-btn {
+  padding: 10px 18px;
+  font-size: 13px;
+  border: 1px solid var(--g-border);
+  border-radius: var(--radius-sm);
+  background: var(--g-white);
+  color: var(--g-muted);
+  cursor: pointer;
+  font-family: Georgia, serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .12s, border-color .12s;
+}
+.action-btn:hover { background: var(--g-sand); border-color: var(--g-warm); }
+.action-btn svg { width: 14px; height: 14px; }
+.action-btn.print-btn { background: var(--g-dark); color: #fff; border-color: var(--g-dark); }
+.action-btn.print-btn:hover { background: #0F2A1C; }
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  padding: 28px 36px 0;
+  font-size: 12px;
+  color: var(--g-subtle);
+  font-family: Georgia, serif;
+  border-top: 1px solid var(--g-border);
+  margin-top: 32px;
+}
+.footer strong { color: var(--g-muted); }
+
+/* ── Responsive ── */
+@media (max-width: 540px) {
+  .header-bar, .content-area, .section-band { padding-left: 20px; padding-right: 20px; }
+  .section-band { margin-left: -20px; margin-right: -20px; }
+  .tool-title { font-size: 26px; }
+  .progress-wrap { padding-left: 20px; padding-right: 20px; }
+  .stats-row { grid-template-columns: 1fr 1fr 1fr; }
+  .stat-num { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- HEADER -->
+<div class="header-bar">
+  <div class="header-top">
+    <span class="brand-name">Genovean</span>
+    <span class="phase-tag">Phase 1 &middot; Awareness</span>
+  </div>
+  <h1 class="tool-title">Signal Spotter</h1>
+  <p class="tool-subtitle">You're not diagnosing anything. You're simply being honest with yourself about what you've already noticed — before you talk yourself out of it again.</p>
+  <div class="how-to-banner">
+    <strong>How to use this tool.</strong> Work through each signal below. If you've seen it — even once — open it, mark how often, and add a note. At the end you'll have a clear picture of what's actually been happening. There are no right or wrong answers here.
+  </div>
+</div>
+
+<!-- STICKY PROGRESS -->
+<div class="progress-wrap no-print">
+  <span id="prog-text" style="white-space:nowrap;font-size:12px;color:#8A8A84;">0 of 16 marked</span>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  <span class="progress-label" id="prog-pct">0%</span>
+</div>
+
+<!-- CONTENT -->
+<div class="content-area">
+
+<!-- SECTION 1: DAILY LIFE -->
+<div class="section-band">
+  <span class="section-icon"><svg viewBox="0 0 10 10"><path d="M5 1v4l3 2" stroke="#fff" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg></span>
+  Daily life &amp; routines
+</div>
+
+<div class="signal-card" id="card-1">
+  <div class="signal-header" onclick="toggleCard(1)">
+    <span class="signal-num">1</span>
+    <span class="signal-label">Missing or forgetting bills and payments</span>
+    <span class="signal-status" id="status-1">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Late notices arriving, unopened mail piling up, utilities being threatened or cut off. These are often the first financial signals families notice — and they're easy to explain away as a busy week. The question is whether it's becoming a pattern.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">If you're not sure what to look for</p>
+      <p class="guidance-text">Look for unopened envelopes. Ask casually about a bill or subscription. Check whether they mention anything being "sorted out." You don't need to investigate — just observe and note what you see.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(1,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(1,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(1,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-2">
+  <div class="signal-header" onclick="toggleCard(2)">
+    <span class="signal-num">2</span>
+    <span class="signal-label">Medication not taken consistently</span>
+    <span class="signal-status" id="status-2">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Skipped doses, mixed-up pills, or confusion about what they're taking and when. This is one of the more serious early signals because it directly affects health — but parents often cover for it, so it can be hard to see.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">If you're not sure what to look for</p>
+      <p class="guidance-text">Notice if pill bottles are in unexpected places, if they mention side effects that seem off, or if they're vague when you ask how they're managing. You're not checking up on them — you're paying attention.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(2,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(2,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(2,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-3">
+  <div class="signal-header" onclick="toggleCard(3)">
+    <span class="signal-num">3</span>
+    <span class="signal-label">Meals being skipped or diet becoming very limited</span>
+    <span class="signal-status" id="status-3">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Cooking becoming too complicated, loss of appetite, the same few foods on repeat, or evidence that the fridge and pantry are going unstocked. Nutrition often quietly declines before anything else becomes visible.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">If you're not sure what to look for</p>
+      <p class="guidance-text">When you visit, take a casual look in the fridge. Notice whether they seem lighter or less energetic. Ask what they had for dinner yesterday — not as a check, just in conversation. Their answer often tells you more than you expect.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(3,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(3,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(3,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-4">
+  <div class="signal-header" onclick="toggleCard(4)">
+    <span class="signal-num">4</span>
+    <span class="signal-label">Home becoming harder to keep up</span>
+    <span class="signal-status" id="status-4">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Dishes not getting done, laundry piling up, rooms that were always tidy now cluttered, maintenance being ignored. You're not looking for perfection — you're looking for a clear change from their normal.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to notice without making it about cleanliness</p>
+      <p class="guidance-text">Think about what their home usually looked like six months ago. If someone who always kept a clean kitchen now has dishes sitting for days, that shift matters far more than the dishes themselves.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(4,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(4,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(4,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<!-- SECTION 2: MEMORY -->
+<div class="section-band">
+  <span class="section-icon"><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.5" stroke="#fff" stroke-width="1.2" fill="none"/><circle cx="5" cy="5" r="1" fill="#fff"/></svg></span>
+  Memory &amp; thinking
+</div>
+
+<div class="signal-card" id="card-5">
+  <div class="signal-header" onclick="toggleCard(5)">
+    <span class="signal-num">5</span>
+    <span class="signal-label">Repeating the same question or story in the same conversation</span>
+    <span class="signal-status" id="status-5">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Everyone forgets and repeats occasionally. The signal here is when it happens within the same conversation, or when the same story comes out every single time you visit. That shift from occasional to pattern is what matters.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">What counts as a signal</p>
+      <p class="guidance-text">One repetition in a long conversation isn't the signal. The signal is a pattern — the same question, the same story, within minutes or across every visit. Start noting how often it happens and when.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(5,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(5,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(5,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-6">
+  <div class="signal-header" onclick="toggleCard(6)">
+    <span class="signal-num">6</span>
+    <span class="signal-label">Confusion about dates, the day of the week, or recent events</span>
+    <span class="signal-status" id="status-6">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Getting the day wrong, not remembering an appointment or visit that happened recently, or being genuinely surprised when told something they should know. The key is whether it's new, and whether it's happening more frequently.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to tell this apart from normal forgetfulness</p>
+      <p class="guidance-text">Most people mix up days occasionally. The shift to notice is when confusion becomes more frequent, when they seem genuinely disoriented rather than briefly forgetful, or when they're surprised to learn something recent they participated in.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(6,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(6,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(6,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-7">
+  <div class="signal-header" onclick="toggleCard(7)">
+    <span class="signal-num">7</span>
+    <span class="signal-label">Difficulty following conversations or making decisions</span>
+    <span class="signal-status" id="status-7">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Losing the thread of a conversation, seeming confused in group settings that used to be easy, or becoming unusually indecisive about things they would previously have handled without a second thought.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">What this looks like in everyday moments</p>
+      <p class="guidance-text">Watch for them asking you to repeat yourself more than usual, trailing off mid-sentence, or seeming overwhelmed by choices that wouldn't have been difficult before. It often shows up first in noisy or busy environments.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(7,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(7,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(7,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-8">
+  <div class="signal-header" onclick="toggleCard(8)">
+    <span class="signal-num">8</span>
+    <span class="signal-label">Getting lost or confused in familiar places</span>
+    <span class="signal-status" id="status-8">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Difficulty navigating a neighbourhood they've lived in for decades, getting turned around driving a route they've taken hundreds of times, or seeming uncertain about how to get somewhere familiar.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">Why this signal is easy to miss</p>
+      <p class="guidance-text">Parents often cover for this by avoiding driving or outings altogether. If you notice they're going out less, ask gently whether they've been getting around okay. Reduced activity can be the signal behind the signal.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(8,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(8,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(8,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<!-- SECTION 3: PHYSICAL -->
+<div class="section-band">
+  <span class="section-icon"><svg viewBox="0 0 10 10"><path d="M5 1.5C3.5 3 2 4 2 5.8A3 3 0 0 0 5 8.5a3 3 0 0 0 3-2.7C8 4 6.5 3 5 1.5z" fill="#fff"/></svg></span>
+  Physical health &amp; safety
+</div>
+
+<div class="signal-card" id="card-9">
+  <div class="signal-header" onclick="toggleCard(9)">
+    <span class="signal-num">9</span>
+    <span class="signal-label">Changes in how they move, walk, or keep their balance</span>
+    <span class="signal-status" id="status-9">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Slower walking, holding onto furniture more, a shuffling gait, hesitation going up or down stairs. Falls are one of the most serious risks for aging adults — and the signs usually show up well before a fall actually happens.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to observe without making them self-conscious</p>
+      <p class="guidance-text">Watch how they get up from a chair, how they move through the kitchen, whether they reach for support in ways they didn't used to. You don't need to comment — just notice and log what you see.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(9,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(9,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(9,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-10">
+  <div class="signal-header" onclick="toggleCard(10)">
+    <span class="signal-num">10</span>
+    <span class="signal-label">Unexplained bruises, cuts, or signs of a fall</span>
+    <span class="signal-status" id="status-10">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Visible marks they don't explain clearly, or a vague story about how it happened. Many falls go unreported — parents don't want to worry you or risk losing their independence. The injury you can see may not be the only one that's happened.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to raise this without causing defensiveness</p>
+      <p class="guidance-text">Don't make it an interrogation. Try: "I noticed that bruise — did something happen?" Keep your tone curious, not alarmed. If they deflect, note it down and watch for more signs rather than pushing in the moment.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(10,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(10,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(10,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-11">
+  <div class="signal-header" onclick="toggleCard(11)">
+    <span class="signal-num">11</span>
+    <span class="signal-label">Noticeable weight loss or physical appearance changes</span>
+    <span class="signal-status" id="status-11">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Clothes that used to fit now hanging loose, a face that looks thinner than you remember, or a general physical decline you notice after not seeing them for a few months. Gradual changes can be hard to see when you're visiting regularly.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">If you only see them often and can't tell</p>
+      <p class="guidance-text">Ask someone who sees them less frequently what they've noticed. Look at photos from a year ago compared to now. Sometimes distance — in time or in person — makes the change easier to see clearly.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(11,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(11,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(11,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-12">
+  <div class="signal-header" onclick="toggleCard(12)">
+    <span class="signal-num">12</span>
+    <span class="signal-label">Driving becoming concerning — near misses, new dents, avoiding driving</span>
+    <span class="signal-status" id="status-12">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">New scrapes on the car, stories about close calls, refusing to drive at night or on highways, or simply driving much less than they used to. Independence is tied to driving for many parents — this is a signal that often comes with a lot of emotion attached.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to approach this carefully</p>
+      <p class="guidance-text">Note what you observe without raising it immediately. Look at the car when you visit. If you're in the car with them, pay attention without commenting. Driving conversations need to be timed carefully — this tool is about noticing, not yet about having that talk.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(12,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(12,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(12,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<!-- SECTION 4: EMOTIONAL / SOCIAL -->
+<div class="section-band">
+  <span class="section-icon"><svg viewBox="0 0 10 10"><path d="M5 8.5C2.5 7 1 5.5 1 3.8a2.2 2.2 0 0 1 4-1.3A2.2 2.2 0 0 1 9 3.8C9 5.5 7.5 7 5 8.5z" fill="#fff"/></svg></span>
+  Emotional &amp; social signals
+</div>
+
+<div class="signal-card" id="card-13">
+  <div class="signal-header" onclick="toggleCard(13)">
+    <span class="signal-num">13</span>
+    <span class="signal-label">Withdrawing from people or activities they used to enjoy</span>
+    <span class="signal-status" id="status-13">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Stopping something they loved — a club, a hobby, regular visits with friends — without a clear reason. Withdrawal can signal depression, embarrassment about something changing, or simply that managing social life is taking more energy than it used to.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to spot what's changed</p>
+      <p class="guidance-text">Think about what they used to do six months ago that they're not doing now. Ask about it naturally: "Are you still going to [thing]?" Listen to how they explain it, not just what they say. Deflection or a vague answer is itself a signal.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(13,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(13,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(13,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-14">
+  <div class="signal-header" onclick="toggleCard(14)">
+    <span class="signal-num">14</span>
+    <span class="signal-label">Mood or personality changes — irritability, sadness, or anxiety</span>
+    <span class="signal-status" id="status-14">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">A parent who was generally even-tempered becoming short-tempered or easily frustrated. Increased anxiety about things that didn't used to worry them. A persistent low mood that isn't connected to a specific event. These shifts can be early signs of cognitive change, depression, or simply the emotional weight of their own awareness that something is different.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to hold this without reacting to it</p>
+      <p class="guidance-text">When a parent becomes irritable or anxious, it's tempting to respond to the mood rather than look behind it. Note what triggers the shift if you can. The emotion is often less important than the pattern underneath it.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(14,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(14,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(14,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<!-- SECTION 5: FINANCIAL -->
+<div class="section-band">
+  <span class="section-icon"><svg viewBox="0 0 10 10"><rect x="1" y="3" width="8" height="5.5" rx="1" stroke="#fff" stroke-width="1" fill="none"/><path d="M3 3V2a2 2 0 0 1 4 0v1" stroke="#fff" stroke-width="1" fill="none"/></svg></span>
+  Financial warning signs
+</div>
+
+<div class="signal-card" id="card-15">
+  <div class="signal-header" onclick="toggleCard(15)">
+    <span class="signal-num">15</span>
+    <span class="signal-label">Signs of scam vulnerability or unusual purchases</span>
+    <span class="signal-status" id="status-15">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Mention of a lottery they've won, a charity they've started giving to that you don't recognise, unusual purchases arriving in the mail, or heightened secrecy about money matters. Older adults are disproportionately targeted by financial scams, and cognitive changes make this risk higher.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">How to raise this gently</p>
+      <p class="guidance-text">Frame it as general concern, not an accusation. "I've been reading a lot about phone scams targeting people lately — has anything like that come your way?" opens a door without putting them on the defensive.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(15,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(15,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(15,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<div class="signal-card" id="card-16">
+  <div class="signal-header" onclick="toggleCard(16)">
+    <span class="signal-num">16</span>
+    <span class="signal-label">Vagueness or avoidance when financial matters come up</span>
+    <span class="signal-status" id="status-16">Not marked</span>
+    <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="detail-body">
+    <p class="signal-desc">Changing the subject when money comes up, being unusually secretive about accounts or documents they were always open about, or being unable to explain their financial situation in the way they once could. This doesn't always mean something is wrong — but it's worth noting.</p>
+    <div class="guidance-box">
+      <p class="guidance-label">Why this signal matters more than it seems</p>
+      <p class="guidance-text">Financial capacity is often one of the first things to become vulnerable, but one of the last things families talk about. If you can see a pattern of avoidance forming, note it now. That information becomes important when you reach the planning phase.</p>
+    </div>
+    <p class="freq-label">How often have you noticed this?</p>
+    <div class="freq-row">
+      <button class="freq-btn" onclick="setFreq(16,'yes',this)">Yes, I've seen this</button>
+      <button class="freq-btn" onclick="setFreq(16,'sometimes',this)">Once or twice</button>
+      <button class="freq-btn" onclick="setFreq(16,'no',this)">Not yet</button>
+    </div>
+    <p class="notes-label">Your notes</p>
+    <textarea class="notes-field" placeholder="What specifically did you notice? When did it happen?" oninput="updateSummary()"></textarea>
+  </div>
+</div>
+
+<!-- SUMMARY PANEL -->
+<div class="summary-panel" id="summary-panel">
+  <p class="summary-title">Your Signal Spotter picture</p>
+  <div class="stats-row">
+    <div class="stat-box yes-box">
+      <span class="stat-num" id="count-yes">0</span>
+      <span class="stat-lbl">Clearly seen</span>
+    </div>
+    <div class="stat-box some-box">
+      <span class="stat-num" id="count-sometimes">0</span>
+      <span class="stat-lbl">Once or twice</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num" id="count-no">0</span>
+      <span class="stat-lbl">Not yet</span>
+    </div>
+  </div>
+  <div class="interpretation" id="interpretation-text">
+    Mark signals above and your picture will build here.
+  </div>
+  <p class="next-label">Your next step</p>
+  <div class="next-steps">
+    <button class="next-btn primary no-print" onclick="window.print()">Save or print your results</button>
+    <button class="next-btn secondary no-print" id="next-tool-btn" style="display:none">Continue to Pattern Log &rarr;</button>
+  </div>
+</div>
+
+<!-- ACTION BAR -->
+<div class="action-bar no-print">
+  <button class="action-btn print-btn" onclick="window.print()">
+    <svg viewBox="0 0 14 14" fill="none"><rect x="2" y="4" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M4 4V2h6v2" stroke="currentColor" stroke-width="1.2"/><path d="M4 9h6M4 11h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+    Print / Save as PDF
+  </button>
+  <button class="action-btn" onclick="resetAll()">
+    <svg viewBox="0 0 14 14" fill="none"><path d="M2 7a5 5 0 1 0 1-3M2 4V7h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Start over
+  </button>
+</div>
+
+</div><!-- /content-area -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <p><strong>Genovean</strong> &mdash; The Quiet Shift &middot; Phase 1: Awareness Tool</p>
+  <p style="margin-top:6px">This tool is for reflection and planning purposes only. It is not a medical assessment.</p>
+  <p style="margin-top:4px">genovean.com &nbsp;&middot;&nbsp; &copy; Genovean 2025</p>
+</div>
+
+</div><!-- /page-wrap -->
+
+<script>
+var freqs = {};
+var total = 16;
+
+function toggleCard(n) {
+  var card = document.getElementById('card-' + n);
+  card.classList.toggle('is-open');
+}
+
+function setFreq(n, val, btn) {
+  freqs[n] = val;
+  var card = document.getElementById('card-' + n);
+  var status = document.getElementById('status-' + n);
+  var row = btn.parentElement;
+  row.querySelectorAll('.freq-btn').forEach(function(b) {
+    b.classList.remove('sel-yes', 'sel-sometimes', 'sel-no');
+  });
+  card.classList.remove('is-yes', 'is-sometimes', 'is-no', 'is-marked');
+  if (val === 'yes') {
+    btn.classList.add('sel-yes');
+    card.classList.add('is-yes', 'is-marked');
+    status.textContent = 'Yes — seen this';
+  } else if (val === 'sometimes') {
+    btn.classList.add('sel-sometimes');
+    card.classList.add('is-sometimes', 'is-marked');
+    status.textContent = 'Once or twice';
+  } else {
+    btn.classList.add('sel-no');
+    card.classList.add('is-no', 'is-marked');
+    status.textContent = 'Not yet';
+  }
+  updateSummary();
+}
+
+function updateSummary() {
+  var y = 0, s = 0, n = 0, marked = 0;
+  for (var k in freqs) {
+    marked++;
+    if (freqs[k] === 'yes') y++;
+    else if (freqs[k] === 'sometimes') s++;
+    else n++;
+  }
+  document.getElementById('count-yes').textContent = y;
+  document.getElementById('count-sometimes').textContent = s;
+  document.getElementById('count-no').textContent = n;
+
+  var pct = Math.round((marked / total) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-text').textContent = marked + ' of ' + total + ' marked';
+
+  var txt = '';
+  if (marked === 0) {
+    txt = 'Mark signals above and your picture will build here.';
+  } else if (y >= 6) {
+    txt = '<strong>A clear pattern is forming.</strong> You\'ve identified a significant number of signals that are already showing up consistently. This is not a reason for alarm — it is a reason to move forward with clarity. The next step is the Pattern Log, which will help you track these over time and create a record you can share with family or a doctor.';
+  } else if (y >= 3 || (y >= 2 && s >= 2)) {
+    txt = '<strong>Several signals are present.</strong> What you\'re seeing is real and worth taking seriously. You\'re not overreacting — you\'re paying attention. The combination of signals you\'ve marked suggests this is worth moving from noticing into planning. Start with a conversation, and consider the Pattern Log to track what you\'re seeing over time.';
+  } else if (y >= 1 || s >= 3) {
+    txt = '<strong>Early signals are showing up.</strong> Nothing here is urgent, but the pattern is worth watching. Keep observing. The fact that you\'re here and paying attention is already the right move. Use the notes section to record specifics — details matter more than you might think when you look back.';
+  } else if (s >= 1 || n >= 2) {
+    txt = 'Nothing has shown up clearly yet, but you\'re building awareness. That matters. If something shifts, you\'ll notice it sooner because you\'ve already started looking.';
+  } else {
+    txt = 'Keep working through the signals. Your picture will form as you go.';
+  }
+  document.getElementById('interpretation-text').innerHTML = txt;
+
+  if (y >= 2 || s >= 3) {
+    document.getElementById('next-tool-btn').style.display = 'inline-block';
+  }
+}
+
+function resetAll() {
+  if (!confirm('Reset all your answers and start over?')) return;
+  freqs = {};
+  for (var i = 1; i <= total; i++) {
+    var card = document.getElementById('card-' + i);
+    card.classList.remove('is-yes','is-sometimes','is-no','is-marked','is-open');
+    document.getElementById('status-' + i).textContent = 'Not marked';
+    card.querySelectorAll('.freq-btn').forEach(function(b) {
+      b.classList.remove('sel-yes','sel-sometimes','sel-no');
+    });
+    card.querySelectorAll('.notes-field').forEach(function(t) { t.value = ''; });
+  }
+  document.getElementById('count-yes').textContent = '0';
+  document.getElementById('count-sometimes').textContent = '0';
+  document.getElementById('count-no').textContent = '0';
+  document.getElementById('prog-fill').style.width = '0%';
+  document.getElementById('prog-pct').textContent = '0%';
+  document.getElementById('prog-text').textContent = '0 of 16 marked';
+  document.getElementById('interpretation-text').innerHTML = 'Mark signals above and your picture will build here.';
+  document.getElementById('next-tool-btn').style.display = 'none';
+}
+</script>
+</body>
+</html>
